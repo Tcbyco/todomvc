@@ -41,14 +41,14 @@ jQuery(function ($) {
 	var App = {
 		init: function () {
 			this.todos = util.store('todos-jquery');
-			this.todoTemplate = Handlebars.compile($('#todo-template').html());
-			this.footerTemplate = Handlebars.compile($('#footer-template').html());
+			view.todoTemplate = Handlebars.compile($('#todo-template').html());
+			view.footerTemplate = Handlebars.compile($('#footer-template').html());
 			this.bindEvents();
 
 			new Router({
 				'/:filter': function (filter) {
 					this.filter = filter;
-					this.render();
+					view.render();
 				}.bind(this)
 			}).init('/all');
 		},
@@ -63,35 +63,14 @@ jQuery(function ($) {
 				.on('focusout', '.edit', this.update.bind(this))
 				.on('click', '.destroy', this.destroy.bind(this));
 		},
-		render: function () {
-			var todos = this.getFilteredTodos();
-			$('#todo-list').html(this.todoTemplate(todos));
-			$('#main').toggle(todos.length > 0);
-			$('#toggle-all').prop('checked', this.getActiveTodos().length === 0);
-			this.renderFooter();
-			$('#new-todo').focus();
-		},
-		renderFooter: function () {
-			var todoCount = this.todos.length;
-			var activeTodoCount = this.getActiveTodos().length;
-			var template = this.footerTemplate({
-				activeTodoCount: activeTodoCount,
-				activeTodoWord: util.pluralize(activeTodoCount, 'item'),
-				completedTodos: todoCount - activeTodoCount,
-				filter: this.filter
-			});
-
-			$('#footer').toggle(todoCount > 0).html(template);
-		},
 		toggleAll: function (e) {
 			var isChecked = $(e.target).prop('checked');
 
 			this.todos.forEach(function (todo) {
 				todo.completed = isChecked;
 			});
-
-			this.render();
       			util.store('todos-jquery', this.todos);
+			view.render();
 		},
 		getActiveTodos: function () {
 			return this.todos.filter(function (todo) {
@@ -117,8 +96,8 @@ jQuery(function ($) {
 		destroyCompleted: function () {
 			this.todos = this.getActiveTodos();
 			this.filter = 'all';
-			this.render();
-      			util.store('todos-jquery', this.todos);
+			util.store('todos-jquery', this.todos);
+      			view.render();
 		},
 		// accepts an element from inside the `.item` div and
 		// returns the corresponding index in the `todos` array
@@ -148,15 +127,14 @@ jQuery(function ($) {
 			});
 
 			$input.val('');
-
-			this.render();
       			util.store('todos-jquery', this.todos);
+			view.render();
 		},
 		toggle: function (e) {
 			var i = this.indexFromEl(e.target);
 			this.todos[i].completed = !this.todos[i].completed;
-			this.render();
-      			util.store('todos-jquery', this.todos);
+			util.store('todos-jquery', this.todos);
+      			view.render();
 		},
 		edit: function (e) {
 			var $input = $(e.target).closest('li').addClass('editing').find('.edit');
@@ -186,16 +164,38 @@ jQuery(function ($) {
 			} else {
 				this.todos[this.indexFromEl(el)].title = val;
 			}
-
-			this.render();
       			util.store('todos-jquery', this.todos);
+			view.render();
 		},
 		destroy: function (e) {
 			this.todos.splice(this.indexFromEl(e.target), 1);
-			this.render();
-      			util.store('todos-jquery', this.todos);
+			util.store('todos-jquery', this.todos);
+      			view.render();
 		}
 	};
+  
+  var view = {
+    	render: function () {
+			var todos = App.getFilteredTodos();
+			$('#todo-list').html(this.todoTemplate(todos));
+			$('#main').toggle(todos.length > 0);
+			$('#toggle-all').prop('checked', App.getActiveTodos().length === 0);
+			this.renderFooter();
+			$('#new-todo').focus();
+		},
+		renderFooter: function () {
+			var todoCount = App.todos.length;
+			var activeTodoCount = App.getActiveTodos().length;
+			var template = this.footerTemplate({
+				activeTodoCount: activeTodoCount,
+				activeTodoWord: util.pluralize(activeTodoCount, 'item'),
+				completedTodos: todoCount - activeTodoCount,
+				filter: App.filter
+			});
+
+			$('#footer').toggle(todoCount > 0).html(template);
+		}
+  }
 
 	App.init();
 });
